@@ -1,110 +1,116 @@
-import React, { useState } from "react";
-import 'bootstrap/dist/css/bootstrap.min.css';
+import React, { useState } from 'react';
 import axios from 'axios';
 
-const ProductDataForm = () => {
-    const [formData, setFormData] = useState({
-        id: '',
-        produto: '',
-        categoria: '',
-        preco: ''
+const ProductForm = () => {
+    const [newProduct, setNewProduct] = useState({
+        name: '',
+        description: '',
+        price: '',
+        stock: ''
     });
+    const [products, setProducts] = useState([]);
 
-    const [responseMessage, setResponseMessage] = useState('');
-
-    const handleChange = (e) => {
+    // Função para atualizar os campos do formulário
+    const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData({
-            ...formData,
+        setNewProduct((prevProduct) => ({
+            ...prevProduct,
             [name]: value,
-        });
+        }));
     };
 
-    const handleSave = async (e) => {
+    // Função que envia os dados para o backend
+    const handleAddProduct = async (e) => {
         e.preventDefault();
+        const token = localStorage.getItem('token'); // Pega o token do localStorage
+
+        if (!token) {
+            console.log('Você precisa estar logado para adicionar um produto.');
+            return;
+        }
+
+        // Validação dos campos do produto
+        if (!newProduct.name || !newProduct.description || !newProduct.price || !newProduct.stock) {
+            console.log('Todos os campos são obrigatórios!');
+            return;
+        }
+
+        // Log para verificar os dados antes de enviar
+        console.log('Dados que estão sendo enviados para o backend:', newProduct);
+
+        // Mapeando os dados do frontend para o backend
+        const productData = {
+            nome: newProduct.name,         // Mapeia 'name' para 'nome'
+            descricao: newProduct.description, // Mapeia 'description' para 'descricao'
+            preco: newProduct.price,       // Mapeia 'price' para 'preco'
+            estoque: newProduct.stock      // Mapeia 'stock' para 'estoque'
+        };
+
+        console.log('Enviando para o backend:', productData);  // Verifique os dados antes de enviar
+
         try {
-            const response = await axios.post('http://localhost:8080/products', formData, {
+            const response = await axios.post('http://localhost:8080/products', productData, {
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`, // Envia o token JWT
                 },
             });
-            setResponseMessage('Produto cadastrado com sucesso!');
-        } catch (error) {
-            setResponseMessage('Erro ao cadastrar produto.');
-        }
-    };
 
-    const handleClear = () => {
-        setFormData({
-            id: '',
-            produto: '',
-            categoria: '',
-            preco: '',
-        });
-        setResponseMessage('');
-    };
+            // Se a resposta for bem-sucedida, atualiza a lista de produtos
+            setProducts([...products, response.data]);
+            setNewProduct({ name: '', description: '', price: '', stock: '' }); // Limpa o formulário
 
-    const handleSearch = async () => {
-        try {
-            const response = await axios.get(`http://localhost:8080/products/${formData.id}`);
-            setFormData({
-                id: response.data.id,
-                produto: response.data.produto,
-                categoria: response.data.categoria,
-                preco: response.data.preco,
-            });
         } catch (error) {
-            setResponseMessage('Produto não encontrado.');
+            console.error('Erro ao adicionar produto', error);
+
+            // Verifique se o erro contém uma resposta do servidor (erro de status HTTP)
+            if (error.response) {
+                console.error('Erro de resposta do servidor:', error.response);
+                console.log('Status:', error.response.status);
+                console.log('Mensagem do servidor:', error.response.data.message || error.response.statusText);
+            } else if (error.request) {
+                // Caso a requisição tenha sido feita, mas não houve resposta
+                console.log('Erro na requisição:', error.request);
+            } else {
+                // Outro erro
+                console.log('Erro desconhecido:', error.message);
+            }
         }
     };
 
     return (
-        <div className="user-account-form">
-            <h3>Cadastro de Produtos</h3>
-            <form onSubmit={handleSave}>
-                <div className="form-group">
-                    <label>Id:</label>
-                    <input
-                        type="text"
-                        name="id"
-                        value={formData.id}
-                        onChange={handleChange}
-                        required
-                    />
-                    <label>Produto:</label>
-                    <input
-                        type="text"
-                        name="produto"
-                        value={formData.produto}
-                        onChange={handleChange}
-                        required
-                    />
-                    <label>Categoria:</label>
-                    <input
-                        type="text"
-                        name="categoria"
-                        value={formData.categoria}
-                        onChange={handleChange}
-                        required
-                    />
-                    <label>Preço:</label>
-                    <input
-                        type="text"
-                        name="preco"
-                        value={formData.preco}
-                        onChange={handleChange}
-                        required
-                    />
-                </div>
-                <div>
-                    <button type="submit" className="btn btn-primary">Salvar</button>
-                    <button type="button" className="btn btn-secondary" onClick={handleClear}>Limpar</button>
-                </div>
-            </form>
-            <button className="btn btn-info" onClick={handleSearch}>Buscar Produto</button>
-            {responseMessage && <p>{responseMessage}</p>}
-        </div>
+        <form onSubmit={handleAddProduct}>
+            <input
+                type="text"
+                name="name"
+                value={newProduct.name}
+                onChange={handleInputChange}
+                placeholder="Nome do Produto"
+            />
+            <input
+                type="text"
+                name="description"
+                value={newProduct.description}
+                onChange={handleInputChange}
+                placeholder="Descrição"
+            />
+            <input
+                type="number"
+                name="price"
+                value={newProduct.price}
+                onChange={handleInputChange}
+                placeholder="Preço"
+            />
+            <input
+                type="number"
+                name="stock"
+                value={newProduct.stock}
+                onChange={handleInputChange}
+                placeholder="Estoque"
+            />
+            <button type="submit">Adicionar Produto</button>
+        </form>
     );
 };
 
-export default ProductDataForm;
+export default ProducDatatForm;
